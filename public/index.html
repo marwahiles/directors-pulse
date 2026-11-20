@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Director's Pulse</title>
+<style>
+  :root{
+    --bg:#f5f3ee; --card:#ffffff; --ink:#1c1b19; --muted:#6f6b63; --line:#e6e2d9;
+    --red:#b42318; --red-bg:#fdecea; --amber:#9a5b00; --amber-bg:#fff4dc; --info:#3d4f63; --info-bg:#eef2f6;
+    --green:#2f6b4f; --ast:#7a4e2d; --lt:#3f5b73; --jc:#5c6b3a;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+  .hidden{display:none!important}
+
+  /* login */
+  #login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .login-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:32px;width:100%;max-width:360px}
+  .login-card h1{font-size:22px;margin:0 0 4px}
+  .login-card p{color:var(--muted);margin:0 0 20px;font-size:14px}
+  input[type=password]{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;background:#fbfaf7}
+  button{font:inherit;cursor:pointer}
+  .btn{background:var(--ink);color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:600;width:100%;margin-top:12px}
+  .err{color:var(--red);font-size:13px;margin-top:10px;min-height:18px}
+
+  /* header */
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  header h1{font-size:26px;margin:0;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:14px;margin-top:2px}
+  .hdr-right{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
+  .ghost{background:transparent;border:1px solid var(--line);border-radius:9px;padding:7px 12px;color:var(--ink)}
+  .ghost:hover{background:#fff}
+
+  /* kpis */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+  .kpi .lbl{color:var(--muted);font-size:13px}
+  .kpi .val{font-size:28px;font-weight:650;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
+  .kpi .note{font-size:13px;color:var(--muted);margin-top:2px}
+  .kpi.alert .val{color:var(--red)}
+
+  /* past due */
+  .pastdue{background:var(--red-bg);border:1px solid #f3c7c2;border-radius:var(--radius);padding:12px 16px;margin-bottom:16px}
+  .pastdue summary{cursor:pointer;font-weight:600;color:var(--red);list-style:none}
+  .pastdue summary::-webkit-details-marker{display:none}
+  .pastdue summary::after{content:" ▾";font-weight:400}
+  .pd-row{display:grid;grid-template-columns:90px 1fr 140px 110px;gap:10px;padding:7px 0;border-top:1px solid #f3c7c2;font-size:14px}
+  .pd-row:first-of-type{margin-top:10px}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+
+  /* filters */
+  .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 18px}
+  .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:14px;color:var(--ink)}
+  .chip .c{color:var(--muted);margin-left:4px}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip.on .c{color:#cfcac0}
+  .spacer{flex:1}
+  label.tog{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);cursor:pointer}
+
+  /* weeks + events */
+  .week{margin-bottom:22px}
+  .week h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 8px;font-weight:600}
+  .week h2 span{text-transform:none;letter-spacing:0;font-weight:400}
+  .ev{display:grid;grid-template-columns:86px 1fr 210px;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;border-left:4px solid var(--line)}
+  .ev.red{border-left-color:var(--red)}
+  .ev.amber{border-left-color:#e0a530}
+  .when .dow{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .when .day{font-size:18px;font-weight:650}
+  .when .time{font-size:13px;color:var(--muted)}
+  .when .out{font-size:12px;color:var(--muted);margin-top:2px}
+  .name{font-weight:600;font-size:16px;text-decoration:none}
+  .name:hover{text-decoration:underline}
+  .meta{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;color:var(--muted);font-size:13px;margin-top:4px}
+  .pill{display:inline-block;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:600;color:#fff}
+  .pill.astorian{background:var(--ast)} .pill.lt{background:var(--lt)} .pill.jackson-offsite{background:var(--jc)} .pill.jackson-other{background:#8a8f80}
+  .pill.st{background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:500}
+  .pill.st.TENTATIVE{border-color:#e0a530;color:var(--amber)}
+  .flags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .flag{font-size:12.5px;border-radius:6px;padding:2px 8px;font-weight:500}
+  .flag.red{background:var(--red-bg);color:var(--red)}
+  .flag.amber{background:var(--amber-bg);color:var(--amber)}
+  .flag.info{background:var(--info-bg);color:var(--info)}
+  .money{text-align:right;font-variant-numeric:tabular-nums}
+  .money .tot{font-weight:650;font-size:16px}
+  .bar{height:6px;background:#efebe3;border-radius:4px;margin:7px 0 5px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--green)}
+  .money .owed{font-size:13px;color:var(--muted)}
+  .money .owed b{color:var(--ink);font-weight:600}
+  .addr{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .empty{background:var(--card);border:1px dashed var(--line);border-radius:var(--radius);padding:28px;text-align:center;color:var(--muted)}
+
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
+  footer a{text-decoration:none} footer a:hover{text-decoration:underline}
+  .loading{color:var(--muted);padding:40px 0;text-align:center}
+
+  @media (max-width:820px){
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .ev{grid-template-columns:70px 1fr}
+    .money{grid-column:2;text-align:left}
+    .pd-row{grid-template-columns:70px 1fr 90px}
+    .pd-row .mgr{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <form class="login-card" id="loginForm">
+    <h1>Director's Pulse</h1>
+    <p>Lexington Union sales leadership</p>
+    <input type="password" id="pw" placeholder="Password" autocomplete="current-password" autofocus>
+    <button class="btn" type="submit">Open</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+</div>
+
+<div id="app" class="wrap hidden">
+  <header>
+    <div>
+      <h1>Next 21 days</h1>
+      <div class="sub" id="range"></div>
+    </div>
+    <div class="hdr-right">
+      <span id="pulled"></span>
+      <button class="ghost" id="refresh">Refresh</button>
+      <button class="ghost" id="logout">Lock</button>
+    </div>
+  </header>
+
+  <div id="body"><div class="loading">Loading…</div></div>
+
+  <footer>
+    <span>Other tools:</span>
+    <a href="https://salespipelineanalysis.netlify.app/" target="_blank" rel="noopener">Sales funnel</a>
+    <a href="https://astorianltaperitivosalessummary.netlify.app/" target="_blank" rel="noopener">Venue sales summary</a>
+    <a href="https://jacksonandcompany.netlify.app/" target="_blank" rel="noopener">Jackson &amp; Company</a>
+    <a href="https://jacksonmenuoptions.netlify.app/" target="_blank" rel="noopener">Menu Library</a>
+    <a href="https://jacksoncostworksheet.netlify.app/" target="_blank" rel="noopener">J&amp;C cost worksheet</a>
+    <a href="https://astorianltvenueestimator.netlify.app/" target="_blank" rel="noopener">Venue estimator</a>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const KEY = 'pulse_pw';
+  const TS_EVENT = id => 'https://app.tripleseat.com/events/' + encodeURIComponent(id);
+  const GROUPS = [
+    ['all', 'All'],
+    ['astorian', 'The Astorian'],
+    ['lt', 'Le Tesserae'],
+    ['jackson-offsite', 'Jackson offsite'],
+    ['jackson-other', 'Jackson other'],
+  ];
+  let DATA = null, group = 'all', flaggedOnly = false, showTastings = false;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const money = n => (n < 0 ? '-' : '') + '$' + Math.round(Math.abs(n || 0)).toLocaleString('en-US');
+  const moneyK = n => Math.abs(n) >= 1e6 ? '$' + (n / 1e6).toFixed(2).replace(/0$/, '') + 'M'
+    : Math.abs(n) >= 1000 ? '$' + (n / 1000).toFixed(n >= 100000 ? 0 : 1).replace(/\.0$/, '') + 'K' : money(n);
+  const d = iso => new Date(iso + 'T12:00:00');
+  const fmt = (iso, o) => d(iso).toLocaleDateString('en-US', o);
+  const level = ev => ev.flags.some(f => f.level === 'red') ? 'red' : ev.flags.some(f => f.level === 'amber') ? 'amber' : '';
+
+  async function load(fresh){
+    const pw = sessionStorage.getItem(KEY) || '';
+    if (window.PULSE_DEMO) { DATA = window.PULSE_DEMO; return render(); }
+    const res = await fetch('/.netlify/functions/pulse' + (fresh ? '?fresh=1' : ''), { headers: { 'x-pulse-password': pw } });
+    const body = await res.json().catch(() => ({ error: 'Unexpected response' }));
+    if (res.status === 401) { lock('Wrong password'); return false; }
+    if (!res.ok) { $('body').innerHTML = '<div class="empty">' + esc(body.error || 'Something went wrong') + '</div>'; return true; }
+    DATA = body; render(); return true;
+  }
+
+  function lock(msg){
+    sessionStorage.removeItem(KEY);
+    $('app').classList.add('hidden'); $('login').classList.remove('hidden');
+    $('loginErr').textContent = msg || ''; $('pw').value = ''; $('pw').focus();
+  }
+
+  $('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    sessionStorage.setItem(KEY, $('pw').value);
+    $('loginErr').textContent = '';
+    $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+    await load(false);
+  });
+  $('refresh').addEventListener('click', async () => {
+    $('refresh').textContent = 'Refreshing…'; await load(true); $('refresh').textContent = 'Refresh';
+  });
+  $('logout').addEventListener('click', () => lock(''));
+
+  function render(){
+    const s = DATA.summary;
+    $('range').textContent = fmt(DATA.today, { month: 'short', day: 'numeric' }) + ' to ' +
+      fmt(DATA.through, { month: 'short', day: 'numeric' }) + ' · definite and tentative events';
+    $('pulled').textContent = DATA.dataPulledAt ? 'Tripleseat data from ' + DATA.dataPulledAt : '';
+
+    const visibleAll = DATA.events.filter(e => showTastings || e.bucket !== 'Tasting');
+    const counts = { all: visibleAll.length };
+    visibleAll.forEach(e => { counts[e.group] = (counts[e.group] || 0) + 1; });
+
+    let list = visibleAll.filter(e => group === 'all' || e.group === group);
+    if (flaggedOnly) list = list.filter(e => level(e));
+
+    let html = '';
+    html += '<div class="kpis">' +
+      kpi('Events', s.events, byGroupNote(s.byGroup)) +
+      kpi('Booked revenue', moneyK(s.revenue), 'definite + tentative') +
+      kpi('Still owed', moneyK(s.owed), s.overdue > 0 ? moneyK(s.overdue) + ' already overdue' : 'nothing overdue') +
+      kpi('Need attention', s.red, s.amber + ' more to watch', s.red > 0) +
+      '</div>';
+
+    if (DATA.pastDue && DATA.pastDue.length) {
+      html += '<details class="pastdue"><summary>Already happened, still owes ' + money(s.pastDueTotal) +
+        ' (' + DATA.pastDue.length + ' event' + (DATA.pastDue.length > 1 ? 's' : '') + ', last 60 days)</summary>' +
+        DATA.pastDue.map(p => '<div class="pd-row"><span>' + fmt(p.date, { month: 'short', day: 'numeric' }) + '</span>' +
+          '<span><a class="name" style="font-size:14px" href="' + TS_EVENT(p.id) + '" target="_blank" rel="noopener">' + esc(p.name) + '</a> · ' + esc(p.bucket) + '</span>' +
+          '<span class="mgr">' + esc(p.manager) + '</span><span class="num">' + money(p.balance) + '</span></div>').join('') +
+        '</details>';
+    }
+
+    html += '<div class="filters">' + GROUPS.map(([k, label]) =>
+      '<button class="chip' + (group === k ? ' on' : '') + '" data-g="' + k + '">' + label + '<span class="c">' + (counts[k] || 0) + '</span></button>').join('') +
+      '<span class="spacer"></span>' +
+      '<label class="tog"><input type="checkbox" id="flagged"' + (flaggedOnly ? ' checked' : '') + '> Flagged only</label>' +
+      (s.tastings ? '<label class="tog"><input type="checkbox" id="tastings"' + (showTastings ? ' checked' : '') + '> Tastings (' + s.tastings + ')</label>' : '') +
+      '</div>';
+
+    if (!list.length) html += '<div class="empty">Nothing here for this filter.</div>';
+    weeks(list).forEach(w => {
+      html += '<section class="week"><h2>' + w.label + ' <span>· ' + w.items.length + ' event' + (w.items.length > 1 ? 's' : '') +
+        ', ' + moneyK(w.items.reduce((a, e) => a + (e.bucket === 'Tasting' ? 0 : e.total), 0)) + '</span></h2>' +
+        w.items.map(card).join('') + '</section>';
+    });
+
+    $('body').innerHTML = html;
+    document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { group = b.dataset.g; render(); }));
+    const f = $('flagged'); if (f) f.addEventListener('change', () => { flaggedOnly = f.checked; render(); });
+    const t = $('tastings'); if (t) t.addEventListener('change', () => { showTastings = t.checked; render(); });
+  }
+
+  function kpi(lbl, val, note, alert){
+    return '<div class="kpi' + (alert ? ' alert' : '') + '"><div class="lbl">' + lbl + '</div><div class="val">' + val + '</div><div class="note">' + esc(note) + '</div></div>';
+  }
+  function byGroupNote(g){
+    const parts = [];
+    if (g.astorian) parts.push(g.astorian + ' Astorian');
+    if (g.lt) parts.push(g.lt + ' LT');
+    const j = (g['jackson-offsite'] || 0) + (g['jackson-other'] || 0);
+    if (j) parts.push(j + ' Jackson');
+    return parts.join(' · ');
+  }
+
+  function weeks(list){
+    const out = [], today = d(DATA.today);
+    const startOfWeek = dt => { const x = new Date(dt); x.setDate(x.getDate() - x.getDay()); x.setHours(12,0,0,0); return x; };
+    const w0 = startOfWeek(today).getTime();
+    list.forEach(e => {
+      const ws = startOfWeek(d(e.date));
+      const idx = Math.round((ws.getTime() - w0) / (7 * 86400000));
+      const label = idx === 0 ? 'This week' : idx === 1 ? 'Next week' :
+        'Week of ' + ws.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      let w = out.find(x => x.label === label);
+      if (!w) { w = { label, items: [] }; out.push(w); }
+      w.items.push(e);
+    });
+    return out;
+  }
+
+  function card(e){
+    const lv = level(e);
+    const paidPct = e.total > 0 ? Math.max(0, Math.min(100, e.paid / e.total * 100)) : 0;
+    const groupLabel = e.bucket === 'Jackson → venue' ? 'Jackson → ' + e.cateringFor : e.bucket;
+    const guests = e.guests ? e.guests + ' guests' + (e.guaranteed ? ' · ' + e.guaranteed + ' guaranteed' : '') : '';
+    const out = e.daysOut === 0 ? 'today' : e.daysOut === 1 ? 'tomorrow' : 'in ' + e.daysOut + ' days';
+    const flags = e.flags.length ? '<div class="flags">' + e.flags
+      .slice().sort((a, b) => rank(a.level) - rank(b.level))
+      .map(f => '<span class="flag ' + f.level + '">' + esc(f.text) + '</span>').join('') + '</div>' : '';
+    return '<div class="ev ' + lv + '">' +
+      '<div class="when"><div class="dow">' + fmt(e.date, { weekday: 'short' }) + '</div>' +
+        '<div class="day">' + fmt(e.date, { month: 'short', day: 'numeric' }) + '</div>' +
+        '<div class="time">' + esc(e.start) + '</div><div class="out">' + out + '</div></div>' +
+      '<div><a class="name" href="' + TS_EVENT(e.id) + '" target="_blank" rel="noopener">' + esc(e.name) + '</a>' +
+        '<div class="meta"><span class="pill ' + e.group + '">' + esc(groupLabel) + '</span>' +
+          '<span class="pill st ' + e.status + '">' + e.status.toLowerCase() + '</span>' +
+          (e.manager ? '<span>' + esc(e.manager) + '</span>' : '') +
+          (guests ? '<span>' + guests + '</span>' : '') +
+          (e.eventType ? '<span>' + esc(e.eventType) + '</span>' : '') +
+        '</div>' +
+        (e.address ? '<div class="addr">' + esc(e.address) + '</div>' : '') +
+        flags + '</div>' +
+      '<div class="money"><div class="tot">' + money(e.total) + '</div>' +
+        '<div class="bar"><i style="width:' + paidPct.toFixed(0) + '%"></i></div>' +
+        '<div class="owed">' + (e.balance > 0.5 ? '<b>' + money(e.balance) + '</b> owed' : e.balance < -0.5 ? 'overpaid ' + money(-e.balance) : 'paid in full') + '</div>' +
+        (e.discount > 0 ? '<div class="owed">' + money(e.discount) + ' discount (' + e.discountPct + '%)</div>' : '') +
+      '</div></div>';
+  }
+  const rank = l => l === 'red' ? 0 : l === 'amber' ? 1 : 2;
+
+  if (sessionStorage.getItem(KEY) || window.PULSE_DEMO) {
+    $('login').classList.add('hidden'); $('app').classList.remove('hidden'); load(false);
+  }
+})();
+</script>
+</body>
+</html>
