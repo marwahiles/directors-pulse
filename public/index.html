@@ -232,6 +232,7 @@
   const OPEN = new Set();
   let view = 'next';
   let drill = null;
+  let menuRange = 'r12';
   const DETAILS = {};
 
   const $ = id => document.getElementById(id);
@@ -374,41 +375,51 @@
   function renderMenu(){
     const M = DATA.menu;
     if (!M) { $('body').innerHTML = '<div class="empty">Menu data needs the updated API.</div>'; return; }
-    const g = group;
-    $('range').textContent = 'What clients actually bought: definite and closed events since ' + fmt(M.from, { month: 'short', year: 'numeric' }) + ', plus everything booked ahead';
+    if (!M.ranges) { $('body').innerHTML = '<div class="empty">Menu data needs the updated API. Deploy the new PulseApi.gs as a new version.</div>'; return; }
+    const g = group, R = menuRange;
+    const rangeLabel = (M.ranges.find(x => x[0] === R) || [])[1] || '';
+    $('range').textContent = 'What clients actually bought, from real menus on booked events · ' + rangeLabel;
     $('pulled').textContent = DATA.dataPulledAt ? 'Tripleseat data from ' + DATA.dataPulledAt : '';
-    const S = M.styles[g] || [], T = M.top[g] || [];
+    const S = (M.styles[R] || {})[g] || [];
+    const T = ((M.top[R] || {})[g] || []).map(a => ({ id: a[0], servings: a[1], events: a[2], last: a[3], next: a[4],
+      dish: (M.dishMeta[a[0]] || [])[0] || a[0], category: (M.dishMeta[a[0]] || [])[1] || '', cost: (M.dishMeta[a[0]] || [])[2] || null }));
+    const cov = M.coverage[R] || { events: 0, matched: 0 };
     const food = S.reduce((a, x) => a + x.food, 0), evs = S.reduce((a, x) => a + x.events, 0);
+    const pipe = S.reduce((a, x) => a + x.pipeline, 0), pipeVal = S.reduce((a, x) => a + x.pipelineValue, 0);
     const best = S.filter(x => x.quoted >= 10 && x.closeRate !== null && ['Drop-off', 'Breakfast / lunch', 'Other'].indexOf(x.style) < 0).sort((a, b) => b.closeRate - a.closeRate)[0];
     const priced = T.filter(t => t.cost && t.cost.perServing > 0).length;
+    const biggest = S.slice().sort((a, b) => b.food - a.food)[0];
 
     let h = '<div class="kpis">' +
-      kpi('Food sold', moneyK(food), evs + ' events with food') +
-      kpi('Biggest style', S.length ? S.slice().sort((a, b) => b.food - a.food)[0].style : '–', S.length ? moneyK(S.slice().sort((a, b) => b.food - a.food)[0].food) + ' in food' : '') +
-      kpi('Best closing style', best ? best.style : '–', best ? best.closeRate + '% of ' + best.quoted + ' quoted' : 'not enough quotes yet') +
-      kpi('Top 30 dishes priced', priced + ' of ' + T.length, 'on Chef Adam\'s Food Cost Sheet', priced < T.length) +
+      kpi('Food sold', moneyK(food), evs + ' booked events with food') +
+      kpi('In the pipeline', pipe, pipe ? moneyK(pipeVal) + ' in tentative events' : 'nothing tentative') +
+      kpi('Best closing style', best ? best.style : '–', best ? best.closeRate + '% of ' + best.quoted + ' quoted' : 'not enough quotes in this range') +
+      kpi('Top dishes priced', priced + ' of ' + T.length, 'on Chef Adam\'s Food Cost Sheet', T.length && priced < T.length) +
       '</div>';
 
-    h += '<div class="filters">' + GROUPS.map(([k, label]) =>
-      '<button class="chip' + (group === k ? ' on' : '') + '" data-g="' + k + '">' + label.replace('Jackson other', 'Jackson pickups & Hawthorne') + '</button>').join('') + '</div>';
+    h += '<div class="filters">' + M.ranges.map(([k, label]) =>
+      '<button class="chip rng' + (R === k ? ' on' : '') + '" data-r="' + k + '">' + esc(label) + '</button>').join('') + '</div>';
+    h += '<div class="filters" style="margin-top:-8px">' + GROUPS.map(([k, label]) =>
+      '<button class="chip grp' + (group === k ? ' on' : '') + '" data-g="' + k + '">' + label.replace('Jackson other', 'Jackson pickups & Hawthorne') + '</button>').join('') + '</div>';
 
-    // style table
-    const maxRate = 100;
-    h += '<div class="sec"><h2>Service style</h2><p class="hint">Booked = definite or closed. Close rate = booked ÷ (booked + lost) for proposals with that style. Venue catering written on Jackson before the switch counts toward its venue.</p>' +
-      (S.length ? '<table class="t"><tr><th>Style</th><th class="num">Booked</th><th class="num hide-m">Guests</th><th class="num">Food sold</th><th class="num">Avg $ / guest</th><th class="num hide-m">Quoted</th><th>Close rate</th></tr>' +
+    const note = R === 'launch' ? ' Proposals sent in the last few weeks haven\'t had time to be lost yet (leads close at day 60), so close rates in this view run high for now.'
+      : R === 'ahead' ? ' Events still to come: many are tentative, so "In the pipeline" matters most here.' : '';
+    h += '<div class="sec"><h2>Service style</h2><p class="hint">Booked = definite or closed. In the pipeline = tentative (approved proposal, no contract and deposit yet). Close rate = booked ÷ (booked + lost). Venue catering written on Jackson before the switch counts toward its venue.' + note + '</p>' +
+      (S.length ? '<table class="t"><tr><th>Style</th><th class="num">Booked</th><th class="num">In the pipeline</th><th class="num hide-m">Guests</th><th class="num">Food sold</th><th class="num">Avg $ / guest</th><th class="num hide-m">Quoted</th><th>Close rate</th></tr>' +
         S.map(x => '<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + (STYLE_COLORS[x.style] || '#ccc') + ';margin-right:7px"></i>' + esc(x.style) + '</td>' +
-          '<td class="num">' + x.events + '</td><td class="num hide-m">' + x.guests.toLocaleString('en-US') + '</td><td class="num">' + money(x.food) + '</td>' +
+          '<td class="num">' + x.events + '</td><td class="num">' + (x.pipeline ? x.pipeline + ' <span style="color:var(--muted);font-size:12px">(' + moneyK(x.pipelineValue) + ')</span>' : '') + '</td>' +
+          '<td class="num hide-m">' + x.guests.toLocaleString('en-US') + '</td><td class="num">' + money(x.food) + '</td>' +
           '<td class="num">' + (x.avgPP ? money(x.avgPP) : '') + '</td><td class="num hide-m">' + x.quoted + '</td>' +
-          '<td>' + (x.closeRate === null ? '' : '<span class="rate" style="width:' + Math.round(x.closeRate / maxRate * 70) + 'px"></span>' + x.closeRate + '%') + '</td></tr>').join('') + '</table>'
-        : '<div style="color:var(--muted)">No events with food for this filter.</div>');
+          '<td>' + (x.closeRate === null ? '' : '<span class="rate" style="width:' + Math.round(x.closeRate / 100 * 70) + 'px"></span>' + x.closeRate + '%') + '</td></tr>').join('') + '</table>'
+        : '<div style="color:var(--muted)">No events with food for this range and location.</div>');
 
-    // by month stacked bars
+    // by month stacked bars (always 12 months back, 6 ahead)
     const BM = M.byMonth[g] || [];
     const tot = m => M.styleOrder.reduce((a, st) => a + (m[st] || 0), 0);
     const maxM = Math.max.apply(null, BM.map(tot).concat([1]));
     const thisMonth = DATA.today.slice(0, 7);
     const mon = ym => { const [y, mo] = ym.split('-'); return new Date(+y, +mo - 1, 1).toLocaleDateString('en-US', { month: 'short' }) + (mo === '01' ? " '" + y.slice(2) : ''); };
-    h += '<h3 style="font-size:13px;color:var(--muted);margin:18px 0 0;font-weight:600">Booked events by month and style (lighter months are still ahead)</h3><div class="stack">' +
+    h += '<h3 style="font-size:13px;color:var(--muted);margin:18px 0 0;font-weight:600">Booked events by month and style, 12 months back and 6 ahead (lighter months are still to come)</h3><div class="stack">' +
       BM.map(m => '<div class="col' + (m.month > thisMonth ? ' future' : '') + '" title="' + esc(M.styleOrder.filter(st => m[st]).map(st => st + ': ' + m[st]).join(', ')) + '"><b>' + (tot(m) || '') + '</b>' +
         M.styleOrder.slice().reverse().filter(st => m[st]).map(st => '<i style="height:' + (m[st] / maxM * 120) + 'px;background:' + STYLE_COLORS[st] + (m.month > thisMonth ? ';opacity:.55' : '') + '"></i>').join('') +
         '<span>' + mon(m.month) + '</span></div>').join('') + '</div>' +
@@ -416,23 +427,23 @@
 
     // top 30 dishes
     const sd = iso => iso ? fmt(iso, { month: 'short', day: 'numeric' }) : '';
-    h += '<div class="sec"><h2>Top 30 dishes by servings</h2><p class="hint">Servings = guest count (guaranteed when set) added up across every definite or closed event the dish was on. ' +
-      M.coverage.matched + ' of ' + M.coverage.events + ' events with food matched at least one dish. Pricing status comes from <a href="' + esc(M.costSheetUrl) + '" target="_blank" rel="noopener">Chef Adam\'s Food Cost Sheet</a>; dishes not priced yet are his to-do list.</p>' +
+    h += '<div class="sec"><h2>Top 30 dishes by servings</h2><p class="hint">Servings = guest count (guaranteed when set) added up across every definite or closed event the dish was on, in the range above. ' +
+      cov.matched + ' of ' + cov.events + ' events with food matched at least one dish. Pricing status comes from <a href="' + esc(M.costSheetUrl) + '" target="_blank" rel="noopener">Chef Adam\'s Food Cost Sheet</a>; dishes not priced yet are his to-do list.</p>' +
       (T.length ? '<table class="t"><tr><th class="num">#</th><th>Dish</th><th class="hide-m">Category</th><th class="num">Servings</th><th class="num">Events</th><th class="hide-m">Last served</th><th class="hide-m">Next booked</th><th>Priced?</th></tr>' +
         T.map((t, i) => '<tr><td class="num">' + (i + 1) + '</td><td>' + esc(t.dish) + '</td><td class="hide-m">' + esc(t.category) + '</td><td class="num">' + t.servings.toLocaleString('en-US') + '</td><td class="num">' + t.events + '</td>' +
           '<td class="hide-m">' + sd(t.last) + '</td><td class="hide-m">' + sd(t.next) + '</td><td>' +
           (t.cost ? (t.cost.perServing > 0 ? '<span class="tag ok">' + money2(t.cost.perServing) + ' / serving</span>' : '<span class="tag todo">Not priced yet</span>')
                   : '<span class="tag none">Not on cost sheet</span>') + '</td></tr>').join('') + '</table>'
-        : '<div style="color:var(--muted)">No dishes matched for this filter.</div>') + '</div>';
+        : '<div style="color:var(--muted)">No dishes matched for this range and location.</div>') + '</div>';
 
-    // not on the list
     const N = M.notOnList || [];
-    if (g === 'all' && N.length) h += '<div class="sec"><h2>Selling, but not on the dish list yet</h2><p class="hint">Items on sold menus (2+ events) that match no dish in the Dish Map tab. Add a row there to start tracking one.</p>' +
+    if (g === 'all' && R === 'r12' && N.length) h += '<div class="sec"><h2>Selling, but not on the dish list yet</h2><p class="hint">Items on sold menus (2+ events, last 12 months) that match no dish in the Dish Map tab. Add a row there to start tracking one.</p>' +
       '<table class="t"><tr><th>Menu item as written</th><th class="num">Events</th><th class="num">Servings</th><th class="hide-m">Last on a menu</th></tr>' +
       N.map(x => '<tr><td>' + esc(x.item) + '</td><td class="num">' + x.events + '</td><td class="num">' + x.servings.toLocaleString('en-US') + '</td><td class="hide-m">' + sd(x.last) + '</td></tr>').join('') + '</table></div>';
 
     $('body').innerHTML = h;
-    document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { group = b.dataset.g; render(); }));
+    document.querySelectorAll('.chip.grp').forEach(b => b.addEventListener('click', () => { group = b.dataset.g; render(); }));
+    document.querySelectorAll('.chip.rng').forEach(b => b.addEventListener('click', () => { menuRange = b.dataset.r; render(); }));
   }
   const money2 = n => '$' + Number(n).toFixed(2);
 
