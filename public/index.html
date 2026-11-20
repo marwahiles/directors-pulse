@@ -31,6 +31,27 @@
   /* header */
   header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
   header h1{font-size:26px;margin:0;letter-spacing:-.01em}
+  .tabs{display:flex;gap:18px}
+  .tab{background:none;border:0;padding:0 0 4px;font-size:24px;font-weight:650;letter-spacing:-.01em;color:#b7b1a5;border-bottom:3px solid transparent}
+  .tab.on{color:var(--ink);border-bottom-color:var(--ink)}
+  .sec{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px}
+  .sec h2{font-size:16px;margin:0 0 2px}
+  .sec .hint{color:var(--muted);font-size:13px;margin:0 0 12px}
+  table.t{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.t th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding:6px 8px;border-bottom:1px solid var(--line)}
+  table.t td{padding:7px 8px;border-bottom:1px solid #f0ece4;vertical-align:top}
+  table.t th.num,table.t td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  table.t tr.sub td{background:#faf8f4;font-weight:600}
+  table.t a{text-decoration:none} table.t a:hover{text-decoration:underline}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .mbar{display:flex;align-items:flex-end;gap:6px;height:120px;margin-top:8px}
+  .mbar div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:11px;color:var(--muted)}
+  .mbar i{display:block;width:100%;background:#c9b48f;border-radius:4px 4px 0 0;min-height:2px}
+  .mbar b{font-weight:600;color:var(--ink);font-size:11px;margin-bottom:3px}
+  .lim{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .lim > div{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .lim .p{font-size:13px;color:var(--muted)} .lim .v{font-size:20px;font-weight:650} .lim .n{font-size:12.5px;color:var(--muted)}
+  @media (max-width:820px){ .two,.lim{grid-template-columns:1fr} .tab{font-size:20px} table.t .hide-m{display:none} }
   .sub{color:var(--muted);font-size:14px;margin-top:2px}
   .hdr-right{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
   .ghost{background:transparent;border:1px solid var(--line);border-radius:9px;padding:7px 12px;color:var(--ink)}
@@ -92,6 +113,27 @@
   .money .owed{font-size:13px;color:var(--muted)}
   .money .owed b{color:var(--ink);font-weight:600}
   .addr{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .ev{cursor:pointer}
+  .ev:hover{border-color:#d6d0c4}
+  .ev.open{border-color:#cfc8ba;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .more{font-size:12px;color:var(--muted);margin-top:6px}
+  .detail{grid-column:1/-1;border-top:1px solid var(--line);margin-top:4px;padding-top:14px;display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:22px;cursor:default}
+  .detail h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 8px;font-weight:600}
+  .kv{display:grid;grid-template-columns:120px 1fr;gap:4px 10px;font-size:13.5px}
+  .kv dt{color:var(--muted)} .kv dd{margin:0}
+  .pay{width:100%;border-collapse:collapse;font-size:13.5px}
+  .pay td{padding:4px 0;border-bottom:1px solid #f0ece4;vertical-align:top}
+  .pay td.num{text-align:right;white-space:nowrap;padding-left:10px}
+  .st-paid{color:var(--green)} .st-open{color:var(--ink)} .st-late{color:var(--red);font-weight:600}
+  .cat{font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 4px} .cat:first-of-type{margin-top:0}
+  .li{display:grid;grid-template-columns:1fr auto;gap:10px;font-size:13.5px;padding:3px 0;border-bottom:1px solid #f0ece4}
+  .li .q{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+  .li .q b{color:var(--ink);font-weight:600}
+  .li .d{color:var(--red);font-size:12px}
+  .li.tbd{background:var(--amber-bg);border-radius:4px;padding:3px 6px}
+  .tslink{display:inline-block;margin-top:14px;font-size:13.5px;font-weight:600;text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+  .tslink:hover{background:#faf8f4}
+  @media (max-width:820px){ .detail{grid-template-columns:1fr} .kv{grid-template-columns:110px 1fr} }
   .empty{background:var(--card);border:1px dashed var(--line);border-radius:var(--radius);padding:28px;text-align:center;color:var(--muted)}
 
   footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
@@ -122,7 +164,7 @@
 <div id="app" class="wrap hidden">
   <header>
     <div>
-      <h1>Next 21 days</h1>
+      <div class="tabs"><button class="tab on" data-v="next">Next 21 days</button><button class="tab" data-v="money">Money</button></div>
       <div class="sub" id="range"></div>
     </div>
     <div class="hdr-right">
@@ -157,6 +199,8 @@
     ['jackson-other', 'Jackson other'],
   ];
   let DATA = null, group = 'all', flaggedOnly = false, showTastings = false;
+  const OPEN = new Set();
+  let view = 'next';
 
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -194,8 +238,14 @@
     $('refresh').textContent = 'Refreshing…'; await load(true); $('refresh').textContent = 'Refresh';
   });
   $('logout').addEventListener('click', () => lock(''));
+  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+    view = b.dataset.v;
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+    if (DATA) render();
+  }));
 
   function render(){
+    if (view === 'money') return renderMoney();
     const s = DATA.summary;
     $('range').textContent = fmt(DATA.today, { month: 'short', day: 'numeric' }) + ' to ' +
       fmt(DATA.through, { month: 'short', day: 'numeric' }) + ' · definite and tentative events';
@@ -241,8 +291,99 @@
 
     $('body').innerHTML = html;
     document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { group = b.dataset.g; render(); }));
+    document.querySelectorAll('.ev').forEach(el => el.addEventListener('click', ev => {
+      if (ev.target.closest('.detail') || ev.target.closest('a')) return;
+      const id = el.dataset.id; OPEN.has(id) ? OPEN.delete(id) : OPEN.add(id); render();
+    }));
     const f = $('flagged'); if (f) f.addEventListener('change', () => { flaggedOnly = f.checked; render(); });
     const t = $('tastings'); if (t) t.addEventListener('change', () => { showTastings = t.checked; render(); });
+  }
+
+
+  /* ---------------- Money tab ---------------- */
+  function renderMoney(){
+    const m = DATA.money;
+    if (!m) { $('body').innerHTML = '<div class="empty">Money data needs the updated API.</div>'; return; }
+    $('range').textContent = 'Balances, deposits and discounts across all booked events';
+    $('pulled').textContent = DATA.dataPulledAt ? 'Tripleseat data from ' + DATA.dataPulledAt : '';
+    const inG = r => group === 'all' || r.group === group;
+    const sd = iso => iso ? fmt(iso, { month: 'short', day: 'numeric' }) : '';
+    const sdy = iso => iso ? fmt(iso, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    const link = r => '<a href="' + TS_EVENT(r.id) + '" target="_blank" rel="noopener">' + esc(r.name) + '</a>';
+    const loc = r => '<span class="pill ' + r.group + '">' + esc(r.bucket === 'Jackson → venue' ? 'Jackson → venue' : r.bucket) + '</span>';
+    const all = [].concat(m.overdue, m.dueSoon, m.noDeposit, DATA.pastDue);
+    const counts = { all: 0 };
+    GROUPS.forEach(([k]) => { if (k !== 'all') counts[k] = all.filter(r => r.group === k).length; });
+    counts.all = all.length;
+
+    let h = '<div class="kpis">' +
+      kpi('Due next 30 days', moneyK(m.dueNext30), moneyK(m.dueNext60) + ' over 60 days') +
+      kpi('Overdue now', moneyK(m.overdueTotal), m.overdue.length + ' payment' + (m.overdue.length === 1 ? '' : 's') + ' on upcoming events', m.overdueTotal > 0) +
+      kpi('Tentative, nothing paid', moneyK(m.noDepositTotal), m.noDeposit.length + ' event' + (m.noDeposit.length === 1 ? '' : 's') + ' with no deposit') +
+      kpi('Already happened, still owes', moneyK(m.pastDueTotal), DATA.pastDue.length + ' events, last 60 days', m.pastDueTotal > 0) +
+      '</div>';
+
+    h += '<div class="filters">' + GROUPS.map(([k, label]) =>
+      '<button class="chip' + (group === k ? ' on' : '') + '" data-g="' + k + '">' + label + '</button>').join('') + '</div>';
+
+    // overdue
+    const od = m.overdue.filter(inG);
+    h += '<div class="sec"><h2>Overdue on upcoming events</h2><p class="hint">Scheduled payments past their due date. Never more than what the client still owes.</p>' +
+      (od.length ? '<table class="t"><tr><th>Event</th><th class="hide-m">Where</th><th class="hide-m">Manager</th><th>Payment</th><th>Was due</th><th class="num">Amount</th></tr>' +
+        od.map(r => '<tr><td>' + link(r) + '<br><span style="color:var(--muted);font-size:12px">' + sdy(r.date) + (r.status === 'TENTATIVE' ? ' · tentative' : '') + '</span></td><td class="hide-m">' + loc(r) + '</td><td class="hide-m">' + esc(r.manager) + '</td><td>' + esc(r.label) + '</td><td>' + sd(r.due) + '</td><td class="num">' + money(r.amount) + '</td></tr>').join('') +
+        '<tr class="sub"><td colspan="5">Total</td><td class="num">' + money(od.reduce((a, r) => a + r.amount, 0)) + '</td></tr></table>'
+        : '<div style="color:var(--muted)">Nothing overdue.</div>') + '</div>';
+
+    // coming due, grouped by week
+    const ds = m.dueSoon.filter(inG);
+    let rows = '', wk = '', wsum = 0;
+    const flush = () => { if (wk) rows += '<tr class="sub"><td colspan="5">' + wk + '</td><td class="num">' + money(wsum) + '</td></tr>'; };
+    ds.forEach(r => {
+      const d0 = d(r.due); d0.setDate(d0.getDate() - d0.getDay());
+      const label = 'Week of ' + d0.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (label !== wk) { flush(); wk = label; wsum = 0; }
+      wsum += r.amount;
+      rows += '<tr><td>' + sd(r.due) + '</td><td>' + link(r) + '<br><span style="color:var(--muted);font-size:12px">event ' + sdy(r.date) + (r.status === 'TENTATIVE' ? ' · tentative' : '') + '</span></td><td class="hide-m">' + loc(r) + '</td><td class="hide-m">' + esc(r.manager) + '</td><td>' + esc(r.label) + '</td><td class="num">' + money(r.amount) + '</td></tr>';
+    });
+    flush();
+    h += '<div class="sec"><h2>Coming due, next 60 days</h2><p class="hint">Open payments on the Tripleseat schedule, with a subtotal for each week.</p>' +
+      (ds.length ? '<table class="t"><tr><th>Due</th><th>Event</th><th class="hide-m">Where</th><th class="hide-m">Manager</th><th>Payment</th><th class="num">Amount</th></tr>' + rows + '</table>'
+        : '<div style="color:var(--muted)">Nothing scheduled.</div>') + '</div>';
+
+    // tentative, no deposit + past due side by side
+    const nd = m.noDeposit.filter(inG);
+    const pd = DATA.pastDue.filter(inG);
+    h += '<div class="two"><div class="sec"><h2>Tentative, nothing paid</h2><p class="hint">Proposal approved but no deposit yet, so the date isn\'t really held.</p>' +
+      (nd.length ? '<table class="t"><tr><th>Event</th><th class="num">Total</th><th class="num">Days tentative</th></tr>' +
+        nd.map(r => '<tr><td>' + link(r) + '<br><span style="color:var(--muted);font-size:12px">' + sdy(r.date) + ' · ' + esc(r.manager) + '</span></td><td class="num">' + money(r.total) + '</td><td class="num">' + (r.daysTentative === '' ? '' : r.daysTentative) + '</td></tr>').join('') + '</table>'
+        : '<div style="color:var(--muted)">None.</div>') + '</div>' +
+      '<div class="sec"><h2>Already happened, still owes</h2><p class="hint">Events in the last 60 days with a balance left.</p>' +
+      (pd.length ? '<table class="t"><tr><th>Event</th><th class="num">Owes</th></tr>' +
+        pd.map(r => '<tr><td>' + link(r) + '<br><span style="color:var(--muted);font-size:12px">' + sdy(r.date) + ' · ' + esc(r.manager) + ' · ' + r.daysAgo + ' days ago</span></td><td class="num">' + money(r.balance) + '</td></tr>').join('') + '</table>'
+        : '<div style="color:var(--muted)">None.</div>') + '</div></div>';
+
+    // discounts
+    const D = m.discounts;
+    const mon = ym => { const [y, mo] = ym.split('-'); return new Date(+y, +mo - 1, 1).toLocaleDateString('en-US', { month: 'short' }) + (mo === '01' ? " '" + y.slice(2) : ''); };
+    const maxM = Math.max.apply(null, D.byMonth.map(x => x.discount).concat([1]));
+    const pctOf = (a, b) => b ? Math.round(a / b * 100) + '%' : '';
+    h += '<div class="sec"><h2>Discounts</h2><p class="hint">' + D.discounted + ' of ' + D.events + ' booked events (' + pctOf(D.discounted, D.events) + ') had a discount line, ' +
+      money(D.total) + ' in total. Typical discount ' + D.medianPct + '%. Events dated ' + sdy(D.from) + ' to ' + sdy(D.to) + '. Price cuts made without a discount line don\'t show here.</p>' +
+      '<div class="lim">' + D.over.map(o => '<div><div class="p">If the limit were ' + o.pct + '%</div><div class="v">' + o.events + ' events</div><div class="n">would have needed you, ' + moneyK(o.amount) + ' in discounts</div></div>').join('') + '</div>' +
+      '<h3 style="font-size:13px;color:var(--muted);margin:18px 0 0;font-weight:600">Discounts by month sold</h3>' +
+      '<div class="mbar">' + D.byMonth.map(x => '<div><b>' + (x.discount ? moneyK(x.discount) : '') + '</b><i style="height:' + Math.round(x.discount / maxM * 85) + '%"></i>' + mon(x.key) + '</div>').join('') + '</div>' +
+      '<div class="two" style="margin-top:18px"><div><table class="t"><tr><th>Manager</th><th class="num">Discounted</th><th class="num">Total</th><th class="num">Typical</th><th class="num">Largest</th></tr>' +
+        D.byManager.map(x => '<tr><td>' + esc(x.key) + '</td><td class="num">' + x.discounted + ' of ' + x.events + '</td><td class="num">' + money(x.discount) + '</td><td class="num">' + x.medianPct + '%</td><td class="num">' + x.maxPct + '%</td></tr>').join('') + '</table></div>' +
+      '<div><table class="t"><tr><th>Location</th><th class="num">Discounted</th><th class="num">Total</th><th class="num">% of revenue</th></tr>' +
+        D.byLocation.map(x => '<tr><td>' + esc(x.key) + '</td><td class="num">' + x.discounted + ' of ' + x.events + '</td><td class="num">' + money(x.discount) + '</td><td class="num">' + (x.revenue ? (x.discount / x.revenue * 100).toFixed(1) + '%' : '') + '</td></tr>').join('') + '</table></div></div>' +
+      '<h3 style="font-size:13px;color:var(--muted);margin:18px 0 6px;font-weight:600">Largest discounts</h3>' +
+      '<table class="t"><tr><th>Event</th><th class="hide-m">Manager</th><th class="hide-m">What was discounted</th><th class="num">Discount</th><th class="num">%</th></tr>' +
+        D.top.map(r => '<tr><td>' + link(r) + '<br><span style="color:var(--muted);font-size:12px">' + sdy(r.date) + ' · ' + esc(r.bucket) + ' · ' + r.status.toLowerCase() + '</span></td><td class="hide-m">' + esc(r.manager) + '</td><td class="hide-m" style="font-size:12.5px;color:var(--muted)">' + esc(r.lines) + '</td><td class="num">' + money(r.discount) + '</td><td class="num">' + r.discountPct + '%</td></tr>').join('') + '</table></div>';
+
+    if (m.scheduleCleanup) h += '<p class="hint" style="color:var(--muted);font-size:13px">' + m.scheduleCleanup + ' upcoming events have a payment schedule in Tripleseat that doesn\'t match what\'s been paid. Worth a cleanup pass.</p>';
+
+    $('body').innerHTML = h;
+    document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { group = b.dataset.g; render(); }));
   }
 
   function kpi(lbl, val, note, alert){
@@ -282,11 +423,11 @@
     const flags = e.flags.length ? '<div class="flags">' + e.flags
       .slice().sort((a, b) => rank(a.level) - rank(b.level))
       .map(f => '<span class="flag ' + f.level + '">' + esc(f.text) + '</span>').join('') + '</div>' : '';
-    return '<div class="ev ' + lv + '">' +
+    return '<div class="ev ' + lv + (OPEN.has(e.id) ? ' open' : '') + '" data-id="' + esc(e.id) + '">' +
       '<div class="when"><div class="dow">' + fmt(e.date, { weekday: 'short' }) + '</div>' +
         '<div class="day">' + fmt(e.date, { month: 'short', day: 'numeric' }) + '</div>' +
         '<div class="time">' + esc(e.start) + '</div><div class="out">' + out + '</div></div>' +
-      '<div><a class="name" href="' + TS_EVENT(e.id) + '" target="_blank" rel="noopener">' + esc(e.name) + '</a>' +
+      '<div><span class="name">' + esc(e.name) + '</span>' +
         '<div class="meta"><span class="pill ' + e.group + '">' + esc(groupLabel) + '</span>' +
           '<span class="pill st ' + e.status + '">' + e.status.toLowerCase() + '</span>' +
           (e.manager ? '<span>' + esc(e.manager) + '</span>' : '') +
@@ -294,12 +435,52 @@
           (e.eventType ? '<span>' + esc(e.eventType) + '</span>' : '') +
         '</div>' +
         (e.address ? '<div class="addr">' + esc(e.address) + '</div>' : '') +
-        flags + '</div>' +
+        flags + (OPEN.has(e.id) ? '' : '<div class="more">Click for details</div>') + '</div>' +
       '<div class="money"><div class="tot">' + money(e.total) + '</div>' +
         '<div class="bar"><i style="width:' + paidPct.toFixed(0) + '%"></i></div>' +
         '<div class="owed">' + (e.balance > 0.5 ? '<b>' + money(e.balance) + '</b> owed' : e.balance < -0.5 ? 'overpaid ' + money(-e.balance) : 'paid in full') + '</div>' +
         (e.discount > 0 ? '<div class="owed">' + money(e.discount) + ' discount (' + e.discountPct + '%)</div>' : '') +
-      '</div></div>';
+      '</div>' + (OPEN.has(e.id) ? detail(e) : '') + '</div>';
+  }
+  function detail(e){
+    const sd = iso => iso ? fmt(iso, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    const row = (k, v) => v ? '<dt>' + k + '</dt><dd>' + esc(v) + '</dd>' : '';
+    const people = '<dl class="kv">' +
+      row('Contact', e.contact) + row('Account', e.account) + row('Sales manager', e.manager) +
+      row('Event manager', e.eventManager) + row('Room', e.room) + row('Time', [e.start, e.end].filter(Boolean).join(' to ')) +
+      row('Service', e.serviceType) + row('Event type', e.eventType) +
+      row('Guests', e.guests ? e.guests + (e.guaranteed ? ' (' + e.guaranteed + ' guaranteed)' : e.bucket === 'Jackson offsite' ? ' (not guaranteed)' : '') : '') +
+      row('Final count due', sd(e.finalCountDue)) + row('Address', e.address) +
+      row('Tentative', sd(e.tentativeDate)) + row('Definite', sd(e.definiteDate)) + '</dl>';
+
+    const today = DATA.today;
+    const pays = (e.payments || []).map(p => {
+      const [label, amt, due, state, paidAt] = p;
+      const paid = /paid/i.test(state);
+      const late = !paid && due && due < today;
+      const st = paid ? '<span class="st-paid">paid ' + esc(paidAt) + '</span>'
+        : late ? '<span class="st-late">overdue</span>' : '<span class="st-open">open</span>';
+      return '<tr><td>' + esc(label) + '<br><span style="color:var(--muted);font-size:12px">' + (due ? 'due ' + sd(due) : 'no due date') + '</span></td>' +
+        '<td class="num">' + money(amt) + '<br>' + st + '</td></tr>';
+    }).join('');
+    const money2 = '<table class="pay">' + (pays || '<tr><td style="color:var(--muted)">No payment schedule in Tripleseat</td></tr>') + '</table>' +
+      '<dl class="kv" style="margin-top:10px">' + row('Total', money(e.total)) + row('Paid', money(e.paid)) +
+      row('Still owed', money(Math.max(0, e.balance))) + (e.discount > 0 ? row('Discount', money(e.discount) + ' (' + e.discountPct + '%)') : '') + '</dl>';
+
+    let lastCat = '', items = '';
+    (e.lines || []).forEach(l => {
+      const [cat, desc, qty, price, disc] = l;
+      if (cat !== lastCat) { items += '<div class="cat">' + esc(cat) + '</div>'; lastCat = cat; }
+      const tbd = /\bTBD\b|to be determined|\bsample\b/i.test(desc);
+      const q = qty && price ? qty + ' × ' + money(price) + '<br><b>' + money(qty * price) + '</b>' : price ? '<b>' + money(price) + '</b>' : '';
+      items += '<div class="li' + (tbd ? ' tbd' : '') + '"><span>' + esc(desc) + (disc ? '<br><span class="d">' + money(disc) + ' discount</span>' : '') + '</span><span class="q">' + q + '</span></div>';
+    });
+    if (!items) items = '<div style="color:var(--muted);font-size:13.5px">No line items yet.</div>';
+
+    return '<div class="detail">' +
+      '<div><h3>Event</h3>' + people + '<a class="tslink" href="' + TS_EVENT(e.id) + '" target="_blank" rel="noopener">Open in Tripleseat ↗</a></div>' +
+      '<div><h3>Payments</h3>' + money2 + '</div>' +
+      '<div><h3>On the proposal</h3>' + items + '</div></div>';
   }
   const rank = l => l === 'red' ? 0 : l === 'amber' ? 1 : 2;
 
