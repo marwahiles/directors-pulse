@@ -144,6 +144,25 @@
   .tslink{display:inline-block;margin-top:14px;font-size:13.5px;font-weight:600;text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
   .tslink:hover{background:#faf8f4}
   @media (max-width:820px){ .detail{grid-template-columns:1fr} .kv{grid-template-columns:110px 1fr} }
+  .kpi.click{cursor:pointer;transition:border-color .15s}
+  .kpi.click:hover{border-color:#cfc8ba}
+  .kpi.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink) inset}
+  .kpi .more2{font-size:11.5px;color:#a39e93;margin-top:4px}
+  .drill{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin:-4px 0 16px}
+  .drill h2{font-size:15px;margin:0 0 8px;display:flex;justify-content:space-between}
+  .drill h2 button{background:none;border:0;color:var(--muted);font-size:13px}
+  table.t tr.rowlink{cursor:pointer} table.t tr.rowlink:hover td{background:#faf8f4}
+  .stack{display:flex;align-items:flex-end;gap:5px;height:150px;margin-top:10px}
+  .stack .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;align-items:stretch}
+  .stack .col i{display:block;width:100%}
+  .stack .col span{font-size:10.5px;color:var(--muted);text-align:center;margin-top:4px}
+  .stack .col b{font-size:10.5px;text-align:center;font-weight:600;margin-bottom:2px}
+  .stack .col.future span{color:#b7b1a5}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted);margin-top:8px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  .rate{display:inline-block;height:6px;background:var(--green);border-radius:3px;vertical-align:middle;margin-right:6px}
+  .tag{font-size:12px;border-radius:6px;padding:1px 7px;white-space:nowrap}
+  .tag.ok{background:#e8f2ec;color:var(--green)} .tag.todo{background:var(--amber-bg);color:var(--amber)} .tag.none{background:var(--info-bg);color:var(--info)}
   .empty{background:var(--card);border:1px dashed var(--line);border-radius:var(--radius);padding:28px;text-align:center;color:var(--muted)}
 
   footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
@@ -174,7 +193,7 @@
 <div id="app" class="wrap hidden">
   <header>
     <div>
-      <div class="tabs"><button class="tab on" data-v="next">Next 21 days</button><button class="tab" data-v="money">Money</button></div>
+      <div class="tabs"><button class="tab on" data-v="next">Next 21 days</button><button class="tab" data-v="money">Money</button><button class="tab" data-v="menu">Menu</button></div>
       <div class="sub" id="range"></div>
     </div>
     <div class="hdr-right">
@@ -201,7 +220,7 @@
 <script>
 (function(){
   const KEY = 'pulse_pw';
-  const TS_EVENT = id => 'https://app.tripleseat.com/events/' + encodeURIComponent(id);
+  const TS_EVENT = id => 'https://theastorian.tripleseat.com/events/' + encodeURIComponent(id);
   const GROUPS = [
     ['all', 'All'],
     ['astorian', 'The Astorian'],
@@ -212,6 +231,7 @@
   let DATA = null, group = 'all', flaggedOnly = false, showTastings = false;
   const OPEN = new Set();
   let view = 'next';
+  let drill = null;
   const DETAILS = {};
 
   const $ = id => document.getElementById(id);
@@ -273,6 +293,7 @@
 
   function render(){
     if (view === 'money') return renderMoney();
+    if (view === 'menu') return renderMenu();
     const s = DATA.summary;
     $('range').textContent = fmt(DATA.today, { month: 'short', day: 'numeric' }) + ' to ' +
       fmt(DATA.through, { month: 'short', day: 'numeric' }) + ' · definite and tentative events';
@@ -296,11 +317,11 @@
 
     let html = '';
     html += '<div class="kpis">' +
-      kpi('Events', s.events, byGroupNote(s.byGroup)) +
-      kpi('Booked revenue', moneyK(s.revenue), 'definite + tentative') +
-      kpi('Still owed', moneyK(s.owed), s.overdue > 0 ? moneyK(s.overdue) + ' already overdue' : 'nothing overdue') +
-      kpi('Need attention', s.red, s.amber + ' more to watch', s.red > 0) +
-      '</div>';
+      kpi('Events', s.events, byGroupNote(s.byGroup), false, 'events') +
+      kpi('Booked revenue', moneyK(s.revenue), 'definite + tentative', false, 'revenue') +
+      kpi('Still owed', moneyK(s.owed), s.overdue > 0 ? moneyK(s.overdue) + ' already overdue' : 'nothing overdue', false, 'owed') +
+      kpi('Need attention', s.red, s.amber + ' more to watch', s.red > 0, 'attention') +
+      '</div>' + drillHtml();
 
     if (DATA.pastDue && DATA.pastDue.length) {
       html += '<details class="pastdue"><summary>Already happened, still owes ' + money(s.pastDueTotal) +
@@ -331,6 +352,12 @@
 
     $('body').innerHTML = html;
     document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { group = b.dataset.g; render(); }));
+    document.querySelectorAll('.kpi.click').forEach(k => k.addEventListener('click', () => { drill = drill === k.dataset.k ? null : k.dataset.k; render(); }));
+    document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => { drill = null; render(); }));
+    document.querySelectorAll('tr[data-open]').forEach(tr => tr.addEventListener('click', () => {
+      const id = tr.dataset.open; OPEN.add(id); drill = null; group = 'all'; flaggedOnly = false; render();
+      const el = document.querySelector('.ev[data-id="' + id + '"]'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
     document.querySelectorAll('.ev').forEach(el => el.addEventListener('click', ev => {
       if (ev.target.closest('.detail') || ev.target.closest('a')) return;
       const id = el.dataset.id; OPEN.has(id) ? OPEN.delete(id) : OPEN.add(id); render();
@@ -339,6 +366,75 @@
     const t = $('tastings'); if (t) t.addEventListener('change', () => { showTastings = t.checked; render(); });
   }
 
+
+
+  /* ---------------- Menu tab ---------------- */
+  const STYLE_COLORS = { 'Classic buffet': '#c9b48f', 'Signature buffet': '#8a6d3b', 'Stations': '#3f5b73', 'Seated': '#2f6b4f',
+    "Hors d'oeuvre": '#9b7bb0', 'Breakfast / lunch': '#c98a5e', 'Drop-off': '#8a8f80', 'Other': '#cfcac0' };
+  function renderMenu(){
+    const M = DATA.menu;
+    if (!M) { $('body').innerHTML = '<div class="empty">Menu data needs the updated API.</div>'; return; }
+    const g = group;
+    $('range').textContent = 'What clients actually bought: definite and closed events since ' + fmt(M.from, { month: 'short', year: 'numeric' }) + ', plus everything booked ahead';
+    $('pulled').textContent = DATA.dataPulledAt ? 'Tripleseat data from ' + DATA.dataPulledAt : '';
+    const S = M.styles[g] || [], T = M.top[g] || [];
+    const food = S.reduce((a, x) => a + x.food, 0), evs = S.reduce((a, x) => a + x.events, 0);
+    const best = S.filter(x => x.quoted >= 10 && x.closeRate !== null && ['Drop-off', 'Breakfast / lunch', 'Other'].indexOf(x.style) < 0).sort((a, b) => b.closeRate - a.closeRate)[0];
+    const priced = T.filter(t => t.cost && t.cost.perServing > 0).length;
+
+    let h = '<div class="kpis">' +
+      kpi('Food sold', moneyK(food), evs + ' events with food') +
+      kpi('Biggest style', S.length ? S.slice().sort((a, b) => b.food - a.food)[0].style : '–', S.length ? moneyK(S.slice().sort((a, b) => b.food - a.food)[0].food) + ' in food' : '') +
+      kpi('Best closing style', best ? best.style : '–', best ? best.closeRate + '% of ' + best.quoted + ' quoted' : 'not enough quotes yet') +
+      kpi('Top 30 dishes priced', priced + ' of ' + T.length, 'on Chef Adam\'s Food Cost Sheet', priced < T.length) +
+      '</div>';
+
+    h += '<div class="filters">' + GROUPS.map(([k, label]) =>
+      '<button class="chip' + (group === k ? ' on' : '') + '" data-g="' + k + '">' + label.replace('Jackson other', 'Jackson pickups & Hawthorne') + '</button>').join('') + '</div>';
+
+    // style table
+    const maxRate = 100;
+    h += '<div class="sec"><h2>Service style</h2><p class="hint">Booked = definite or closed. Close rate = booked ÷ (booked + lost) for proposals with that style. Venue catering written on Jackson before the switch counts toward its venue.</p>' +
+      (S.length ? '<table class="t"><tr><th>Style</th><th class="num">Booked</th><th class="num hide-m">Guests</th><th class="num">Food sold</th><th class="num">Avg $ / guest</th><th class="num hide-m">Quoted</th><th>Close rate</th></tr>' +
+        S.map(x => '<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + (STYLE_COLORS[x.style] || '#ccc') + ';margin-right:7px"></i>' + esc(x.style) + '</td>' +
+          '<td class="num">' + x.events + '</td><td class="num hide-m">' + x.guests.toLocaleString('en-US') + '</td><td class="num">' + money(x.food) + '</td>' +
+          '<td class="num">' + (x.avgPP ? money(x.avgPP) : '') + '</td><td class="num hide-m">' + x.quoted + '</td>' +
+          '<td>' + (x.closeRate === null ? '' : '<span class="rate" style="width:' + Math.round(x.closeRate / maxRate * 70) + 'px"></span>' + x.closeRate + '%') + '</td></tr>').join('') + '</table>'
+        : '<div style="color:var(--muted)">No events with food for this filter.</div>');
+
+    // by month stacked bars
+    const BM = M.byMonth[g] || [];
+    const tot = m => M.styleOrder.reduce((a, st) => a + (m[st] || 0), 0);
+    const maxM = Math.max.apply(null, BM.map(tot).concat([1]));
+    const thisMonth = DATA.today.slice(0, 7);
+    const mon = ym => { const [y, mo] = ym.split('-'); return new Date(+y, +mo - 1, 1).toLocaleDateString('en-US', { month: 'short' }) + (mo === '01' ? " '" + y.slice(2) : ''); };
+    h += '<h3 style="font-size:13px;color:var(--muted);margin:18px 0 0;font-weight:600">Booked events by month and style (lighter months are still ahead)</h3><div class="stack">' +
+      BM.map(m => '<div class="col' + (m.month > thisMonth ? ' future' : '') + '" title="' + esc(M.styleOrder.filter(st => m[st]).map(st => st + ': ' + m[st]).join(', ')) + '"><b>' + (tot(m) || '') + '</b>' +
+        M.styleOrder.slice().reverse().filter(st => m[st]).map(st => '<i style="height:' + (m[st] / maxM * 120) + 'px;background:' + STYLE_COLORS[st] + (m.month > thisMonth ? ';opacity:.55' : '') + '"></i>').join('') +
+        '<span>' + mon(m.month) + '</span></div>').join('') + '</div>' +
+      '<div class="legend">' + M.styleOrder.filter(st => BM.some(m => m[st])).map(st => '<span><i style="background:' + STYLE_COLORS[st] + '"></i>' + esc(st) + '</span>').join('') + '</div></div>';
+
+    // top 30 dishes
+    const sd = iso => iso ? fmt(iso, { month: 'short', day: 'numeric' }) : '';
+    h += '<div class="sec"><h2>Top 30 dishes by servings</h2><p class="hint">Servings = guest count (guaranteed when set) added up across every definite or closed event the dish was on. ' +
+      M.coverage.matched + ' of ' + M.coverage.events + ' events with food matched at least one dish. Pricing status comes from <a href="' + esc(M.costSheetUrl) + '" target="_blank" rel="noopener">Chef Adam\'s Food Cost Sheet</a>; dishes not priced yet are his to-do list.</p>' +
+      (T.length ? '<table class="t"><tr><th class="num">#</th><th>Dish</th><th class="hide-m">Category</th><th class="num">Servings</th><th class="num">Events</th><th class="hide-m">Last served</th><th class="hide-m">Next booked</th><th>Priced?</th></tr>' +
+        T.map((t, i) => '<tr><td class="num">' + (i + 1) + '</td><td>' + esc(t.dish) + '</td><td class="hide-m">' + esc(t.category) + '</td><td class="num">' + t.servings.toLocaleString('en-US') + '</td><td class="num">' + t.events + '</td>' +
+          '<td class="hide-m">' + sd(t.last) + '</td><td class="hide-m">' + sd(t.next) + '</td><td>' +
+          (t.cost ? (t.cost.perServing > 0 ? '<span class="tag ok">' + money2(t.cost.perServing) + ' / serving</span>' : '<span class="tag todo">Not priced yet</span>')
+                  : '<span class="tag none">Not on cost sheet</span>') + '</td></tr>').join('') + '</table>'
+        : '<div style="color:var(--muted)">No dishes matched for this filter.</div>') + '</div>';
+
+    // not on the list
+    const N = M.notOnList || [];
+    if (g === 'all' && N.length) h += '<div class="sec"><h2>Selling, but not on the dish list yet</h2><p class="hint">Items on sold menus (2+ events) that match no dish in the Dish Map tab. Add a row there to start tracking one.</p>' +
+      '<table class="t"><tr><th>Menu item as written</th><th class="num">Events</th><th class="num">Servings</th><th class="hide-m">Last on a menu</th></tr>' +
+      N.map(x => '<tr><td>' + esc(x.item) + '</td><td class="num">' + x.events + '</td><td class="num">' + x.servings.toLocaleString('en-US') + '</td><td class="hide-m">' + sd(x.last) + '</td></tr>').join('') + '</table></div>';
+
+    $('body').innerHTML = h;
+    document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { group = b.dataset.g; render(); }));
+  }
+  const money2 = n => '$' + Number(n).toFixed(2);
 
   /* ---------------- Money tab ---------------- */
   function renderMoney(){
@@ -426,8 +522,47 @@
     document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { group = b.dataset.g; render(); }));
   }
 
-  function kpi(lbl, val, note, alert){
-    return '<div class="kpi' + (alert ? ' alert' : '') + '"><div class="lbl">' + lbl + '</div><div class="val">' + val + '</div><div class="note">' + esc(note) + '</div></div>';
+  function kpi(lbl, val, note, alert, key){
+    return '<div class="kpi' + (alert ? ' alert' : '') + (key ? ' click' : '') + (key && drill === key ? ' on' : '') + '"' + (key ? ' data-k="' + key + '"' : '') + '>' +
+      '<div class="lbl">' + lbl + '</div><div class="val">' + val + '</div><div class="note">' + esc(note) + '</div>' +
+      (key ? '<div class="more2">' + (drill === key ? 'Click to close' : 'Click for the list') + '</div>' : '') + '</div>';
+  }
+
+  // The list behind a KPI on the Next 21 days view
+  function drillHtml(){
+    if (!drill) return '';
+    const ev = DATA.events.filter(e => e.bucket !== 'Tasting');
+    const sd = iso => fmt(iso, { weekday: 'short', month: 'short', day: 'numeric' });
+    const row = (e, right) => '<tr class="rowlink" data-open="' + esc(e.id) + '"><td>' + sd(e.date) + '</td><td><b style="font-weight:600">' + esc(e.name) + '</b><br><span style="color:var(--muted);font-size:12px">' +
+      esc(e.bucket === 'Jackson → venue' ? 'Jackson → ' + e.cateringFor : e.bucket) + ' · ' + esc(e.manager) + (e.status === 'TENTATIVE' ? ' · tentative' : '') + '</span></td>' + right + '</tr>';
+    let title = '', head = '', body = '', foot = '';
+    if (drill === 'events') {
+      title = 'All ' + ev.length + ' events, by date';
+      head = '<th>Date</th><th>Event</th><th class="num">Guests</th><th class="num">Total</th>';
+      body = ev.map(e => row(e, '<td class="num">' + (e.guests || '') + (e.guaranteed ? ' (' + e.guaranteed + ' gtd)' : '') + '</td><td class="num">' + money(e.total) + '</td>')).join('');
+    } else if (drill === 'revenue') {
+      const L = ev.slice().sort((a, b) => b.total - a.total);
+      title = 'Booked revenue, biggest first';
+      head = '<th>Date</th><th>Event</th><th class="num">Total</th><th class="num">Share</th>';
+      const tot = L.reduce((a, e) => a + e.total, 0) || 1;
+      body = L.map(e => row(e, '<td class="num">' + money(e.total) + '</td><td class="num">' + Math.round(e.total / tot * 100) + '%</td>')).join('');
+      foot = '<tr class="sub"><td colspan="2">Total</td><td class="num">' + money(tot) + '</td><td></td></tr>';
+    } else if (drill === 'owed') {
+      const L = ev.filter(e => e.balance > 0.5).sort((a, b) => b.balance - a.balance);
+      title = L.length + ' events still owe money, biggest first';
+      head = '<th>Date</th><th>Event</th><th class="num">Owed</th><th>Next payment</th>';
+      body = L.map(e => row(e, '<td class="num">' + money(e.balance) + (e.overdue > 0.5 ? '<br><span style="color:var(--red);font-size:12px">' + money(e.overdue) + ' overdue</span>' : '') + '</td><td>' +
+        (e.nextDue ? fmt(e.nextDue, { month: 'short', day: 'numeric' }) + (e.nextAmount ? ', ' + money(e.nextAmount) : '') : '<span style="color:var(--muted)">none scheduled</span>') + '</td>')).join('');
+      foot = '<tr class="sub"><td colspan="2">Total</td><td class="num">' + money(L.reduce((a, e) => a + e.balance, 0)) + '</td><td></td></tr>';
+    } else if (drill === 'attention') {
+      const L = ev.filter(e => level(e)).sort((a, b) => rank(level(a)) - rank(level(b)) || a.date.localeCompare(b.date));
+      title = 'Flagged events, red first';
+      head = '<th>Date</th><th>Event</th><th>Flags</th>';
+      body = L.map(e => row(e, '<td><div class="flags" style="margin:0">' + e.flags.filter(f => f.level !== 'info').map(f => '<span class="flag ' + f.level + '">' + esc(f.text) + '</span>').join('') + '</div></td>')).join('');
+    }
+    return '<div class="drill"><h2><span>' + title + '</span><button data-close="1">Close ✕</button></h2>' +
+      (body ? '<table class="t"><tr>' + head + '</tr>' + body + foot + '</table>' : '<div style="color:var(--muted)">Nothing here.</div>') +
+      '<p class="hint" style="margin:8px 0 0;color:var(--muted);font-size:12.5px">Click a row to open that event below.</p></div>';
   }
   function byGroupNote(g){
     const parts = [];
