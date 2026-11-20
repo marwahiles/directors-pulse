@@ -28,8 +28,10 @@ exports.handler = async (event) => {
     return reply(401, { error: 'Wrong password' });
   }
 
-  const fresh = event.queryStringParameters && event.queryStringParameters.fresh === '1' ? '&fresh=1' : '';
-  const url = PULSE_API_URL + '?key=' + encodeURIComponent(PULSE_API_KEY) + fresh;
+  const q = event.queryStringParameters || {};
+  const fresh = q.fresh === '1' ? '&fresh=1' : '';
+  const id = q.id ? '&id=' + encodeURIComponent(String(q.id).replace(/[^0-9]/g, '')) : '';
+  const url = PULSE_API_URL + '?key=' + encodeURIComponent(PULSE_API_KEY) + fresh + id;
 
   try {
     const res = await fetch(url, { redirect: 'follow' });

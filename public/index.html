@@ -54,6 +54,16 @@
   @media (max-width:820px){ .two,.lim{grid-template-columns:1fr} .tab{font-size:20px} table.t .hide-m{display:none} }
   .sub{color:var(--muted);font-size:14px;margin-top:2px}
   .hdr-right{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
+  #q{border:1px solid var(--line);border-radius:9px;padding:7px 11px;font-size:14px;width:240px;background:#fff}
+  .ops{grid-column:1/-1;border-top:1px dashed var(--line);padding-top:12px}
+  .ops pre{white-space:pre-wrap;font:13.5px/1.55 inherit;font-family:inherit;margin:0;max-height:460px;overflow:auto;background:#fbfaf7;border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+  .ops mark{background:var(--amber-bg);color:inherit;padding:0 2px;border-radius:3px}
+  .docs{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .docs a{font-size:12.5px;text-decoration:none;border:1px solid var(--line);border-radius:7px;padding:4px 9px;background:#fff}
+  .docs a:hover{background:#faf8f4}
+  .docs a.main{font-weight:600}
+  .loadingd{grid-column:1/-1;color:var(--muted);font-size:13.5px;padding:6px 0}
+  @media (max-width:820px){ #q{width:100%} .hdr-right{flex-wrap:wrap} }
   .ghost{background:transparent;border:1px solid var(--line);border-radius:9px;padding:7px 12px;color:var(--ink)}
   .ghost:hover{background:#fff}
 
@@ -168,6 +178,7 @@
       <div class="sub" id="range"></div>
     </div>
     <div class="hdr-right">
+      <input id="q" type="search" placeholder="Find any upcoming event…" autocomplete="off">
       <span id="pulled"></span>
       <button class="ghost" id="refresh">Refresh</button>
       <button class="ghost" id="logout">Lock</button>
@@ -201,6 +212,7 @@
   let DATA = null, group = 'all', flaggedOnly = false, showTastings = false;
   const OPEN = new Set();
   let view = 'next';
+  const DETAILS = {};
 
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -238,6 +250,21 @@
     $('refresh').textContent = 'Refreshing…'; await load(true); $('refresh').textContent = 'Refresh';
   });
   $('logout').addEventListener('click', () => lock(''));
+  $('q').addEventListener('input', () => { if (DATA) { if (view !== 'next') { view = 'next'; document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x.dataset.v === 'next')); } render(); } });
+
+  async function loadDetail(id){
+    if (DETAILS[id]) return;
+    DETAILS[id] = { loading: true };
+    try {
+      if (window.PULSE_DEMO_DETAIL) DETAILS[id] = window.PULSE_DEMO_DETAIL[id] || { error: 'not found' };
+      else {
+        const res = await fetch('/.netlify/functions/pulse?id=' + encodeURIComponent(id), { headers: { 'x-pulse-password': sessionStorage.getItem(KEY) || '' } });
+        DETAILS[id] = await res.json().catch(() => ({ error: 'Could not load details' }));
+      }
+    } catch (err) { DETAILS[id] = { error: 'Could not load details' }; }
+    render();
+  }
+
   document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
     view = b.dataset.v;
     document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
@@ -257,6 +284,15 @@
 
     let list = visibleAll.filter(e => group === 'all' || e.group === group);
     if (flaggedOnly) list = list.filter(e => level(e));
+    const q = $('q').value.trim().toLowerCase();
+    let searchHits = null;
+    if (q.length >= 2) {
+      const inNext = {}; DATA.events.forEach(e => { inNext[e.id] = e; });
+      searchHits = (DATA.search || []).filter(r => [r[1], r[6], r[8], r[9]].join(' ').toLowerCase().indexOf(q) >= 0)
+        .filter(r => group === 'all' || r[3] === group).slice(0, 40)
+        .map(r => inNext[r[0]] || { id: r[0], name: r[1], date: r[2], group: r[3], bucket: r[4], status: r[5], manager: r[6],
+          total: r[7], account: r[8], contact: r[9], flags: [], lite: true, daysOut: Math.round((d(r[2]) - d(DATA.today)) / 86400000) });
+    }
 
     let html = '';
     html += '<div class="kpis">' +
@@ -282,7 +318,11 @@
       (s.tastings ? '<label class="tog"><input type="checkbox" id="tastings"' + (showTastings ? ' checked' : '') + '> Tastings (' + s.tastings + ')</label>' : '') +
       '</div>';
 
-    if (!list.length) html += '<div class="empty">Nothing here for this filter.</div>';
+    if (searchHits) {
+      html += '<section class="week"><h2>Search: "' + esc(q) + '" <span>· ' + searchHits.length + ' upcoming event' + (searchHits.length === 1 ? '' : 's') + (searchHits.length === 40 ? ' (first 40)' : '') + '</span></h2>' +
+        (searchHits.length ? searchHits.map(card).join('') : '<div class="empty">No upcoming event matches that.</div>') + '</section>';
+      list = [];
+    } else if (!list.length) html += '<div class="empty">Nothing here for this filter.</div>';
     weeks(list).forEach(w => {
       html += '<section class="week"><h2>' + w.label + ' <span>· ' + w.items.length + ' event' + (w.items.length > 1 ? 's' : '') +
         ', ' + moneyK(w.items.reduce((a, e) => a + (e.bucket === 'Tasting' ? 0 : e.total), 0)) + '</span></h2>' +
@@ -420,6 +460,7 @@
     const groupLabel = e.bucket === 'Jackson → venue' ? 'Jackson → ' + e.cateringFor : e.bucket;
     const guests = e.guests ? e.guests + ' guests' + (e.guaranteed ? ' · ' + e.guaranteed + ' guaranteed' : '') : '';
     const out = e.daysOut === 0 ? 'today' : e.daysOut === 1 ? 'tomorrow' : 'in ' + e.daysOut + ' days';
+    if (OPEN.has(e.id) && !DETAILS[e.id]) setTimeout(() => loadDetail(e.id), 0);
     const flags = e.flags.length ? '<div class="flags">' + e.flags
       .slice().sort((a, b) => rank(a.level) - rank(b.level))
       .map(f => '<span class="flag ' + f.level + '">' + esc(f.text) + '</span>').join('') + '</div>' : '';
@@ -437,12 +478,16 @@
         (e.address ? '<div class="addr">' + esc(e.address) + '</div>' : '') +
         flags + (OPEN.has(e.id) ? '' : '<div class="more">Click for details</div>') + '</div>' +
       '<div class="money"><div class="tot">' + money(e.total) + '</div>' +
-        '<div class="bar"><i style="width:' + paidPct.toFixed(0) + '%"></i></div>' +
-        '<div class="owed">' + (e.balance > 0.5 ? '<b>' + money(e.balance) + '</b> owed' : e.balance < -0.5 ? 'overpaid ' + money(-e.balance) : 'paid in full') + '</div>' +
+        (e.lite ? '' : '<div class="bar"><i style="width:' + paidPct.toFixed(0) + '%"></i></div>' +
+        '<div class="owed">' + (e.balance > 0.5 ? '<b>' + money(e.balance) + '</b> owed' : e.balance < -0.5 ? 'overpaid ' + money(-e.balance) : 'paid in full') + '</div>') +
         (e.discount > 0 ? '<div class="owed">' + money(e.discount) + ' discount (' + e.discountPct + '%)</div>' : '') +
       '</div>' + (OPEN.has(e.id) ? detail(e) : '') + '</div>';
   }
-  function detail(e){
+  function detail(base){
+    const got = DETAILS[base.id];
+    if (!got || got.loading) return '<div class="detail"><div class="loadingd">Loading details…</div></div>';
+    if (got.error) return '<div class="detail"><div class="loadingd">' + esc(got.error) + '</div></div>';
+    const e = Object.assign({}, base, got, { flags: base.flags });
     const sd = iso => iso ? fmt(iso, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
     const row = (k, v) => v ? '<dt>' + k + '</dt><dd>' + esc(v) + '</dd>' : '';
     const people = '<dl class="kv">' +
@@ -477,10 +522,21 @@
     });
     if (!items) items = '<div style="color:var(--muted);font-size:13.5px">No line items yet.</div>';
 
+    const seen = {};
+    const docs = '<div class="docs"><a class="main" href="' + TS_EVENT(e.id) + '" target="_blank" rel="noopener">Open in Tripleseat ↗</a>' +
+      (e.docLinks || []).filter(l => { const k = l[0].toLowerCase(); if (seen[k]) return false; seen[k] = 1; return true; })
+        .map(l => '<a href="' + esc(l[1]) + '" target="_blank" rel="noopener">' + esc(l[0]) + '</a>').join('') + '</div>';
+    const opsText = esc(e.ops || '').replace(/^.*\b(wine|wines|champagne|sparkling|prosecco|cabernet|pinot|chardonnay|sauvignon|merlot|ros[eé])\b.*$/gim, m => '<mark>' + m + '</mark>');
+    const opsLink = (e.docLinks || []).find(l => /ops/i.test(l[0]));
+    const ops = '<div class="ops"><h3>Event / Ops details</h3>' +
+      (e.ops ? '<pre>' + opsText + '</pre>'
+        : opsLink ? '<div class="docs" style="margin-top:0"><a class="main" href="' + esc(opsLink[1]) + '" target="_blank" rel="noopener">Open Event/Ops Details ↗</a></div>' +
+            '<div style="color:var(--muted);font-size:12.5px;margin-top:6px">Wine selection and ops notes. Opens in Tripleseat, so you need to be logged in.</div>'
+        : '<div style="color:var(--muted);font-size:13.5px">No Event/Ops Details document on this event.</div>') + '</div>';
     return '<div class="detail">' +
-      '<div><h3>Event</h3>' + people + '<a class="tslink" href="' + TS_EVENT(e.id) + '" target="_blank" rel="noopener">Open in Tripleseat ↗</a></div>' +
+      '<div><h3>Event</h3>' + people + docs + '</div>' +
       '<div><h3>Payments</h3>' + money2 + '</div>' +
-      '<div><h3>On the proposal</h3>' + items + '</div></div>';
+      '<div><h3>On the proposal</h3>' + items + '</div>' + ops + '</div>';
   }
   const rank = l => l === 'red' ? 0 : l === 'amber' ? 1 : 2;
 
